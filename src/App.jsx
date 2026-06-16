@@ -191,7 +191,7 @@ export default function App() {
           <h1 style={S.title}>몬스터 카드 생성기</h1>
           <p style={S.desc}>사진을 올리면 AI가 분석해서<br />트레이딩 카드로 만들어줘요</p>
           <button style={S.btn} onClick={() => fileRef.current?.click()}>📸 사진 업로드</button>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFile} />
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
           <p style={S.hint}>카메라로 찍거나 갤러리에서 선택</p>
           {error && <p style={{ color: "#ef4444", marginTop: 14, fontSize: 13 }}>{error}</p>}
         </div>
