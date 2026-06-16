@@ -216,7 +216,13 @@ export default function App() {
           <label htmlFor="mc-file" style={S.btn}>📸 사진 업로드</label>
           <input id="mc-file" type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
           <p style={S.hint}>카메라로 찍거나 갤러리에서 선택</p>
-          {error && <p style={{ color: "#ef4444", marginTop: 14, fontSize: 13 }}>{error}</p>}
+          {error && (
+            <>
+              <p style={{ color: "#ef4444", marginTop: 14, fontSize: 13 }}>{error}</p>
+              <button style={{ ...S.btn, marginTop: 10, padding: "12px 28px", fontSize: 14 }}
+                onClick={() => { setError(""); setImg(null); }}>다시 시도</button>
+            </>
+          )}
         </div>
       )}
 
@@ -227,13 +233,6 @@ export default function App() {
           <p style={{ marginTop: 16, fontSize: 16, fontWeight: 700 }}>카드 생성 중...</p>
           <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>AI가 몬스터를 소환하고 있어요</p>
           {img && <img src={img} style={{ width: 100, borderRadius: 12, marginTop: 16, opacity: 0.6 }} alt="" />}
-        </div>
-      )}
-
-      {error && !card && !loading && !showKeyInput && (
-        <div style={{ textAlign: "center", padding: 40 }}>
-          <p style={{ color: "#ef4444", marginBottom: 12 }}>{error}</p>
-          <button style={S.btn} onClick={() => { setError(""); setImg(null); }}>다시 시도</button>
         </div>
       )}
 
