@@ -3,21 +3,45 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: event.body,
-  });
+  try {
+    const { imageData, mediaType, prompt } = JSON.parse(event.body);
 
-  const data = await res.json();
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [
+            { inlineData: { mimeType: mediaType, data: imageData } },
+            { text: prompt },
+          ]}],
+          generationConfig: { maxOutputTokens: 800 },
+        }),
+      }
+    );
 
-  return {
-    statusCode: res.status,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  };
+    const data = await res.json();
+
+    if (data.error) {
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: data.error.message }),
+      };
+    }
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    };
+  } catch (e) {
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: e.message }),
+    };
+  }
 };

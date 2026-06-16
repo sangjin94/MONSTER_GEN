@@ -38,24 +38,20 @@ export default function App() {
   async function generateCard(dataUrl, mediaType) {
     setLoading(true); setError("");
     try {
+      const mimeType = mediaType.startsWith("image/") ? mediaType : "image/jpeg";
+      const prompt = `이 사진을 보고 트레이딩 카드 몬스터를 만들어줘. 사진 속 대상을 몬스터로 의인화/변환해서 창의적으로.
+반드시 아래 JSON만 응답 (코드펜스 없이):
+{"name":"몬스터이름(한글)","name_en":"영문이름","type":"${Object.keys(TYPES).join("/")} 중 하나","hp":숫자(40~300),"stage":"기본/1진화/2진화","height":"0.8m","weight":"12.5kg","attack1_name":"기술1","attack1_cost":숫자(1~3),"attack1_damage":"30","attack1_desc":"짧은설명","attack2_name":"필살기","attack2_cost":숫자(2~4),"attack2_damage":"120","attack2_desc":"짧은설명","weakness":"${Object.keys(TYPES).join("/")} 중 하나","flavor":"도감설명 2문장","rarity":"N/R/SR/SSR/UR"}`;
+
       const res = await fetch("/.netlify/functions/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6", max_tokens: 800,
-          messages: [{ role: "user", content: [
-            { type: "image", source: { type: "base64", media_type: mediaType.startsWith("image/") ? mediaType : "image/jpeg", data: dataUrl.split(",")[1] } },
-            { type: "text", text: `이 사진을 보고 트레이딩 카드 몬스터를 만들어줘. 사진 속 대상을 몬스터로 의인화/변환해서 창의적으로.
-반드시 아래 JSON만 응답 (코드펜스 없이):
-{"name":"몬스터이름(한글)","name_en":"영문이름","type":"${Object.keys(TYPES).join("/")} 중 하나","hp":숫자(40~300),"stage":"기본/1진화/2진화","height":"0.8m","weight":"12.5kg","attack1_name":"기술1","attack1_cost":숫자(1~3),"attack1_damage":"30","attack1_desc":"짧은설명","attack2_name":"필살기","attack2_cost":숫자(2~4),"attack2_damage":"120","attack2_desc":"짧은설명","weakness":"${Object.keys(TYPES).join("/")} 중 하나","flavor":"도감설명 2문장","rarity":"N/R/SR/SSR/UR"}` }
-          ]}]
-        })
+        body: JSON.stringify({ imageData: dataUrl.split(",")[1], mediaType: mimeType, prompt }),
       });
       const data = await res.json();
-      if (data.error) { setError(`API 오류: ${data.error.message}`); return; }
-      const text = (data.content || []).map(b => b.type === "text" ? b.text : "").join("");
-      setCard(JSON.parse(text.replace(/```json/gi, "").replace(/```/g, "").trim()));
-    } catch { setError("카드 생성 실패. API 키를 확인하고 다시 시도해보세요."); }
+      if (data.error) { setError(`오류: ${data.error}`); return; }
+      setCard(JSON.parse(data.text.replace(/```json/gi, "").replace(/```/g, "").trim()));
+    } catch { setError("카드 생성 실패. 다시 시도해보세요."); }
     finally { setLoading(false); }
   }
 
