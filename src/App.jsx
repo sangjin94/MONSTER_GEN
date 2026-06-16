@@ -1,5 +1,21 @@
 import { useState, useRef } from "react";
 
+async function compressImage(dataUrl) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxSize = 800;
+      const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.8));
+    };
+    img.src = dataUrl;
+  });
+}
+
 const TYPES = {
   불: { bg: "linear-gradient(135deg,#ff6b35,#d32f2f)", icon: "🔥", color: "#ff8a65" },
   물: { bg: "linear-gradient(135deg,#1e88e5,#0d47a1)", icon: "💧", color: "#64b5f6" },
@@ -23,7 +39,6 @@ export default function App() {
   const [flipped, setFlipped] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [sharing, setSharing] = useState(false);
-  const fileRef = useRef();
   const cardRef = useRef();
 
   async function handleFile(e) {
@@ -31,7 +46,12 @@ export default function App() {
     if (!file) return;
     setError(""); setCard(null); setFlipped(false);
     const reader = new FileReader();
-    reader.onload = async (ev) => { setImg(ev.target.result); await generateCard(ev.target.result, file.type); };
+    reader.onload = async (ev) => {
+      const compressed = await compressImage(ev.target.result);
+      setImg(compressed);
+      await generateCard(compressed, "image/jpeg");
+    };
+    reader.onerror = () => setError("이미지를 읽을 수 없어요. 다시 시도해보세요.");
     reader.readAsDataURL(file);
   }
 
@@ -190,8 +210,8 @@ export default function App() {
           <div style={{ fontSize: 52, marginBottom: 8, animation: "float 3s ease-in-out infinite" }}>🃏</div>
           <h1 style={S.title}>몬스터 카드 생성기</h1>
           <p style={S.desc}>사진을 올리면 AI가 분석해서<br />트레이딩 카드로 만들어줘요</p>
-          <button style={S.btn} onClick={() => fileRef.current?.click()}>📸 사진 업로드</button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+          <label htmlFor="mc-file" style={S.btn}>📸 사진 업로드</label>
+          <input id="mc-file" type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
           <p style={S.hint}>카메라로 찍거나 갤러리에서 선택</p>
           {error && <p style={{ color: "#ef4444", marginTop: 14, fontSize: 13 }}>{error}</p>}
         </div>
