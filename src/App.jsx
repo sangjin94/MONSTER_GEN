@@ -23,20 +23,8 @@ export default function App() {
   const [flipped, setFlipped] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [sharing, setSharing] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("mc_api_key") || "");
-  const [keyDraft, setKeyDraft] = useState("");
-  const [showKeyInput, setShowKeyInput] = useState(false);
   const fileRef = useRef();
   const cardRef = useRef();
-
-  function saveKey() {
-    const k = keyDraft.trim();
-    if (!k) return;
-    localStorage.setItem("mc_api_key", k);
-    setApiKey(k);
-    setKeyDraft("");
-    setShowKeyInput(false);
-  }
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
@@ -50,14 +38,9 @@ export default function App() {
   async function generateCard(dataUrl, mediaType) {
     setLoading(true); setError("");
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/.netlify/functions/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-sonnet-4-6", max_tokens: 800,
           messages: [{ role: "user", content: [
@@ -203,38 +186,7 @@ export default function App() {
           background:#1e293b;color:#e2e8f0;font-size:12px;font-weight:700;
           cursor:pointer;font-family:inherit;transition:all .12s}
         .sbar button:active{transform:scale(.94);background:#334155}
-        .key-input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #334155;
-          background:#1e293b;color:#e2e8f0;font-size:13px;font-family:inherit;
-          outline:none;margin-bottom:10px}
-        .key-input:focus{border-color:#7c3aed}
       `}</style>
-
-      {/* API 키 입력 모달 */}
-      {showKeyInput && (
-        <div style={S.modal}>
-          <div style={S.modalBox}>
-            <p style={{ fontWeight: 800, fontSize: 16, marginBottom: 6 }}>Anthropic API 키 설정</p>
-            <p style={{ fontSize: 11, color: "#94a3b8", marginBottom: 14, lineHeight: 1.5 }}>
-              키는 이 기기에만 저장되며 서버로 전송되지 않습니다.<br />
-              console.anthropic.com 에서 발급받을 수 있어요.
-            </p>
-            <input
-              className="key-input"
-              type="password"
-              placeholder="sk-ant-..."
-              value={keyDraft}
-              onChange={e => setKeyDraft(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && saveKey()}
-              autoFocus
-            />
-            <div style={{ display: "flex", gap: 8 }}>
-              <button style={{ ...S.btn, flex: 1, padding: "12px 0", fontSize: 14 }} onClick={saveKey}>저장</button>
-              <button style={{ ...S.btn, flex: 1, padding: "12px 0", fontSize: 14, background: "#334155", boxShadow: "none" }}
-                onClick={() => setShowKeyInput(false)}>취소</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 업로드 */}
       {!card && !loading && (
@@ -242,20 +194,9 @@ export default function App() {
           <div style={{ fontSize: 52, marginBottom: 8, animation: "float 3s ease-in-out infinite" }}>🃏</div>
           <h1 style={S.title}>몬스터 카드 생성기</h1>
           <p style={S.desc}>사진을 올리면 AI가 분석해서<br />트레이딩 카드로 만들어줘요</p>
-          {apiKey ? (
-            <>
-              <button style={S.btn} onClick={() => fileRef.current?.click()}>📸 사진 업로드</button>
-              <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFile} />
-              <p style={S.hint} onClick={() => { setKeyDraft(apiKey); setShowKeyInput(true); }}>
-                🔑 API 키 변경
-              </p>
-            </>
-          ) : (
-            <>
-              <button style={S.btn} onClick={() => { setKeyDraft(""); setShowKeyInput(true); }}>🔑 API 키 입력하기</button>
-              <p style={S.hint}>Anthropic API 키가 필요해요</p>
-            </>
-          )}
+          <button style={S.btn} onClick={() => fileRef.current?.click()}>📸 사진 업로드</button>
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={handleFile} />
+          <p style={S.hint}>카메라로 찍거나 갤러리에서 선택</p>
           {error && <p style={{ color: "#ef4444", marginTop: 14, fontSize: 13 }}>{error}</p>}
         </div>
       )}
@@ -474,13 +415,11 @@ const S = {
   btn: { padding: "16px 36px", borderRadius: 14, border: "none",
     background: "linear-gradient(135deg,#7c3aed,#6d28d9)", color: "#fff",
     fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 20px #7c3aed55" },
-  hint: { fontSize: 11, color: "#64748b", marginTop: 14, cursor: "pointer" },
+  hint: { fontSize: 11, color: "#64748b", marginTop: 14 },
   loadWrap: { textAlign: "center", padding: "80px 20px", color: "#e2e8f0" },
   spinner: { width: 40, height: 40, border: "4px solid #334155", borderTop: "4px solid #8b5cf6",
     borderRadius: "50%", margin: "0 auto", animation: "spin 1s linear infinite" },
   atkRow: { display: "flex", gap: 6, alignItems: "flex-start", padding: "3px 0" },
   costCol: { display: "flex", flexDirection: "column", gap: 2, paddingTop: 1 },
   costDot: { width: 15, height: 15, borderRadius: "50%", fontSize: 8, lineHeight: "15px", textAlign: "center", display: "block" },
-  modal: { position: "fixed", inset: 0, background: "#0008", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 },
-  modalBox: { background: "#1e293b", borderRadius: 20, padding: 24, width: "calc(100% - 48px)", maxWidth: 360, border: "1px solid #334155" },
 };
